@@ -1,4 +1,5 @@
 import psycopg2
+from datetime import datetime
 from collections import OrderedDict
 
 # What are the most popular three articles of all time?
@@ -79,14 +80,39 @@ def questionTwo():
 
 
 def questionThree():
-    # divide the number of errored requests (Status 404), by the total number of requests then multiply it by 100 to get the percentage. WHERE this value is > 1%,display the date, and the percentage.
     db = psycopg2.connect("dbname=news")
     cursor = db.cursor()
-    cursor.execute('''''')
+    cursor.execute(''' select time::date,
+                        count(*) as total,
+                        count(*) filter (where status like'4%') as num
+                        from log group by time::date order by time; ''')
     results = cursor.fetchall()
     db.close()
-    pass
+
+    # for each day of the month, we should have two values.
+    # The number of 404 requests, and the total number of the requests.
+    # These two pieces of information are enough to determine whether or not
+    # that particular day had a percentage of errored requests above.
+    dateList = []
+
+    for i in range(len(results)):
+        date = results[i][0]
+        totalRequests = results[i][1]
+        errorRequests = results[i][2]
+        percentageOfErrors = float(errorRequests)/totalRequests * 100
+        # print('{} {} {}'.format(date, totalRequests, errorRequests))
+        datetime_object = datetime.strptime('{}'.format(date), '%Y-%m-%d')
+        formattedDate = datetime_object.strftime("%B %d, %Y")
+
+        if percentageOfErrors > 1:
+            print('{} -- {}% errors'.format(formattedDate,
+                                            round(percentageOfErrors, 1)))
+            dateList.append(
+                '{} -- {}% errors'.format(formattedDate,
+                                          round(percentageOfErrors, 1)))
+    return dateList
 
 
-# questionOne()
-# questionTwo()
+questionOne()
+questionTwo()
+questionThree()
