@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Print top articles, authors, and days with most failed page requests."""
 import psycopg2
-from datetime import datetime
-from collections import OrderedDict
 
 
 def printArticleRankings():
