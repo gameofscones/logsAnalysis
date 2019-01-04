@@ -1,118 +1,87 @@
+#!/usr/bin/env python3
 import psycopg2
 from datetime import datetime
 from collections import OrderedDict
 
-# What are the most popular three articles of all time?
-# Which articles have been accessed the most?
-# Present this information as a sorted list
-# with the most popular article at the top.
 
 
-def questionOne():
+def printArticleRankings():
+    """
+    What are the most popular three articles of all time?
+    Which articles have been accessed the most?
+    Present this information as a sorted list
+    with the most popular article at the top.
+    """
 
     db = psycopg2.connect("dbname=news")
     cursor = db.cursor()
     # slug looks like path so we need to join using those two it seems.
     cursor.execute('''select count(path) as views,
                         title from log join articles on
-                        log.path like (\'%\' || articles.slug)
-                        group by title order by views desc limit 10;''')
+                        log.path = '/article/' || articles.slug
+                        group by title order by views desc limit 3;''')
     results = cursor.fetchall()
     db.close()
     # results contains a list of tuples. Format this for readability.
     topArticles = []
-    for i in range(3):
-        article = results[i][1]
-        views = results[i][0]
-        # printing the results based on example format
+    # for i in range(3):
+    #     article = results[i][1]
+    #     views = results[i][0]
+    #     # printing the results based on example format
+    #     print('"{}" -- {} views'.format(article, views))
+    #     # returning same results to a list in case that's what's needed
+    #     topArticles.append('"{}" -- {} views'.format(article, views))
+    for views, article in results:
         print('"{}" -- {} views'.format(article, views))
-        # returning same results to a list in case that's what's needed
-        topArticles.append('"{}" -- {} views'.format(article, views))
 
     return topArticles
 
-# Who are the most popular article authors of all time?
-# That is, when you sum up all of the articles each author has written,
-# which authors get the most page views?
-# Present this as a sorted list with the most popular author at the top.
 
 
-def questionTwo():
+
+def printAuthorRankings():
+    """
+        Who are the most popular article authors of all time?
+        That is, when you sum up all of the articles each author has written,
+        which authors get the most page views?
+        Present this as a sorted list with the most popular author at the top.
+    """
     db = psycopg2.connect("dbname=news")
     cursor = db.cursor()
     cursor.execute('''select name, count(*) as views
                     from articles join authors on articles.author = authors.id
-                    join log on log.path like ('%' || articles.slug) group by
-                    name, title order by views desc limit 10;''')
+                    join log on log.path = '/article/' || articles.slug group by
+                    name order by views desc;''')
     results = cursor.fetchall()
     db.close()
-    topAuthors = {}
-    # iterate over the list of results,
-    # if the object at index 0 in each tuple is not in the top authors list
-    # add the key and value. If the name is in the top authors list,
-    # then add the value of the name to the one that is in the top authors list
-    for i in results:
-        if i[0] in topAuthors:
-            # if the name is already in the top authors,
-            # simply add the value to the current value
-            topAuthors[i[0]] += i[1]
-        else:
-            # if the name is not in top authors, add everything.
-            topAuthors[i[0]] = i[1]
 
-    # Sort the dictionary
-    sortedDictionary = OrderedDict(
-        sorted(topAuthors.items(), key=lambda t: t[1])[::-1])
-    sortedDictList = list(sortedDictionary.items())
-
-    def showTopAuthors():
-        for i in range(4):
-            name = sortedDictList[i][0]
-            totalViews = sortedDictList[i][1]
-            print("{} -- {} views".format(name, totalViews))
-
-    showTopAuthors()
-    return sortedDictList
-
-# On which days did more than 1% of requests lead to errors?
-# The log table includes a column status that indicates the
-# HTTP status code that the news site sent to the user's browser.
+    for name, views in results:
+        print("{} -- {} views".format(name, views))
 
 
-def questionThree():
+def printErrorReport():
+    """
+        On which days did more than 1% of requests lead to errors?
+        The log table includes a column status that indicates the
+        HTTP status code that the news site sent to the user's browser.
+    """
     db = psycopg2.connect("dbname=news")
     cursor = db.cursor()
-    cursor.execute(''' select time::date,
-                        count(*) as total,
-                        count(*) filter (where status like'4%') as num
-                        from log group by time::date order by time; ''')
+    cursor.execute('''select to_char(time, 'Mon DD, YYYY'), 
+                      cast(cast(num as float)/total * 100 as decimal(10,2)) as 
+                      error_percent from (select time::date, count(*) as total, 
+                      count(*) filter (where status like'4%') as num from 
+                      log group by time::date order by time) log where 
+                      cast(num as float)/total * 100 > 1; ''')
     results = cursor.fetchall()
     db.close()
 
-    # for each day of the month, we should have two values.
-    # The number of 404 requests, and the total number of the requests.
-    # These two pieces of information are enough to determine whether or not
-    # that particular day had a percentage of errored requests above.
-    dateList = []
-
-    for i in range(len(results)):
-        date = results[i][0]
-        totalRequests = results[i][1]
-        errorRequests = results[i][2]
-        percentageOfErrors = float(errorRequests)/totalRequests * 100
-        # print('{} {} {}'.format(date, totalRequests, errorRequests))
-        datetime_object = datetime.strptime('{}'.format(date), '%Y-%m-%d')
-        formattedDate = datetime_object.strftime("%B %d, %Y")
-
-        if percentageOfErrors > 1:
-            print('{} -- {}% errors'.format(formattedDate,
-                                            round(percentageOfErrors, 1)))
-            dateList.append(
-                '{} -- {}% errors'.format(formattedDate,
-                                          round(percentageOfErrors, 1)))
-    return dateList
+    for date,percent in results:
+        print('{} -- {}% errors'.format(date,percent))
 
 
-questionOne()
-questionTwo()
-questionThree()
+
+
+printArticleRankings()
+printAuthorRankings()
+printErrorReport()
