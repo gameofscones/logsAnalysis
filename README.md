@@ -12,6 +12,8 @@ This project sets up a mock PostgreSQL database using newsdata.sql. The script, 
 * newsdata.sql (https://d17h27t6h515a5.cloudfront.net/topher/2016/August/57b5f748_newsdata/newsdata.zip)
 
 ## Usage
+1. Clone the git repository into your desired location
+2. Unzip newsdata.sql, and place it into the cloned repository in the same directory as logsdb.py
 
 
 
