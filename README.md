@@ -17,7 +17,7 @@ This project sets up a mock PostgreSQL database using newsdata.sql. The script, 
 1. Clone the git repository into your desired location
 2. From the repo folder, run vagrant up, and vagrant ssh, then cd into /vagrant
 3. Unzip newsdata.sql, and place it into the cloned repository in the same directory as logsdb.py
-4. Load the data by running the command psql -d news -f newsdata.sql
+4. Load the data by running the command `psql -d news -f newsdata.sql`
 5. Run logsdb.py
 
 
